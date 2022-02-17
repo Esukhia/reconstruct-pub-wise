@@ -17,3 +17,7 @@ def test_get_last_syl():
     for test_case, expected_syl in zip(test_cases, expected_results):
         last_syl = get_last_syl(test_case)
         assert last_syl == expected_syl
+
+
+if __name__ == "__main__":
+    test_get_last_syl()

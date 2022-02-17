@@ -46,15 +46,24 @@ def split_text(content):
     text_parts['notes'] = notes
     return text_parts
 
-def get_last_syl(chunk):
-    chunks = re.split('་', chunk)
-    if chunks[-1]: 
-        if "\n" == chunk[-1] or chunk[-1] == " ":
-            last_syl = "་".join(chunks[-2:])
-        else:
-            last_syl = chunks[-1]
-    else:
-        last_syl = "་".join(chunks[-2:])
+def get_last_syl(text):
+    chunks = re.split('(་|།།|།)',text)
+    reformated_chunks = []
+    cur_chunk = ""
+    for chunk in chunks:
+        if chunk and not is_punct(chunk):
+            cur_chunk += chunk
+        elif is_punct(chunk) and chunk != "།།":
+            cur_chunk += chunk
+            reformated_chunks.append(cur_chunk)
+            cur_chunk = ""
+        elif chunk == "།།":
+            reformated_chunks.append(cur_chunk)
+            reformated_chunks.append(chunk)
+            cur_chunk = ''
+    if cur_chunk:
+        reformated_chunks.append(cur_chunk)
+    last_syl = reformated_chunks[-1]
     return last_syl
 
 def get_old_note(chunk):
@@ -70,7 +79,7 @@ def is_punct(string):
     # put in common
     if '༄' in string or '༅' in string or '༆' in string or '༇' in string or '༈' in string or \
         '།' in string or '༎' in string or '༏' in string or '༐' in string or '༑' in string or \
-        '༔' in string or '_' in string:
+        '༔' in string or '_' in string or '་' == string:
         return True
     else:
         return False
@@ -102,7 +111,8 @@ def get_diplomatic_text(parma, text_parts):
             if "-" in cur_parma_note:
                 new_chunk = re.sub(old_note+"$", '', text_chunk)
             elif "+" in cur_parma_note:
-                new_chunk = text_chunk + cur_parma_note[1:]
+                new_note = get_new_note(cur_parma_note[1:], next_text_chunk)
+                new_chunk = text_chunk + new_note
             else:
                 new_note = get_new_note(cur_parma_note, next_text_chunk)
                 new_chunk = re.sub(old_note+"$", new_note, text_chunk)
