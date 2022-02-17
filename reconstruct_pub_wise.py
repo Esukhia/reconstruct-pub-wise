@@ -1,4 +1,5 @@
 import re
+from antx import transfer
 from pathlib import Path
 
 
@@ -84,7 +85,7 @@ def is_punct(string):
     else:
         return False
 
-def get_new_note(note, next_chunk):
+def get_new_note(old_note, note, next_chunk):
     new_note = note
     first_char = next_chunk[0]
     if not is_punct(first_char):
@@ -92,6 +93,8 @@ def get_new_note(note, next_chunk):
         new_note = re.sub('་་', '་', new_note)
     elif is_punct(first_char):
         new_note = re.sub('།', '', new_note)
+    patterns = [["line_break", '(\n)']]
+    new_note = transfer(old_note, patterns, new_note)
     return new_note
 
 def get_diplomatic_text(parma, text_parts):
@@ -111,10 +114,10 @@ def get_diplomatic_text(parma, text_parts):
             if "-" in cur_parma_note:
                 new_chunk = re.sub(old_note+"$", '', text_chunk)
             elif "+" in cur_parma_note:
-                new_note = get_new_note(cur_parma_note[1:], next_text_chunk)
+                new_note = get_new_note(old_note, cur_parma_note[1:], next_text_chunk)
                 new_chunk = text_chunk + new_note
             else:
-                new_note = get_new_note(cur_parma_note, next_text_chunk)
+                new_note = get_new_note(old_note, cur_parma_note, next_text_chunk)
                 new_chunk = re.sub(old_note+"$", new_note, text_chunk)
         else:
             new_chunk = re.sub(':', '', text_chunk)
@@ -126,8 +129,7 @@ def get_diplomatic_text(parma, text_parts):
 
 
 def reconstruct_pub_wise(text_id):
-    base_path = Path('./tests/data/')
-    # base_path = Path('./data/tengyur/')
+    base_path = Path('./data/tengyur/')
     collated_text = (base_path / 'collated_text' / f'{text_id}.txt').read_text(encoding='utf-8')
     text_parts = split_text(collated_text)
     parmas = ['derge', 'narthang', 'peking', 'chone']
@@ -137,5 +139,5 @@ def reconstruct_pub_wise(text_id):
     
 
 if __name__ == "__main__":
-    text_id = 'D007'
+    text_id = 'D1109'
     reconstruct_pub_wise(text_id)
