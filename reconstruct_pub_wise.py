@@ -136,7 +136,11 @@ def get_diplomatic_text(parma, text_parts):
 def get_text_title(text_id):
     text_title = t_text_list_dictionary[text_id]['title']
     return text_title
-    
+
+def get_desired_text_format(diplomatic_text):
+    page_number_removed_text = re.sub(r"([0-9]+-[0-9]+)", " ", diplomatic_text)
+    desired_text = re.sub(r"\n", " ", page_number_removed_text)
+    return desired_text
     
 def reconstruct_pub_wise(text_id):
     base_path = Path('./data/')
@@ -145,8 +149,9 @@ def reconstruct_pub_wise(text_id):
     parmas = ['སྡེ་དགེ', 'སྣར་ཐང', 'པེ་ཅིན', 'ཅོ་ནེ']
     for parma in parmas:
         diplomatic_text = get_diplomatic_text(parma, text_parts)
+        desired_diplomatic_text = get_desired_text_format(diplomatic_text)
         title = get_text_title(text_id)
-        (base_path / parma / f'{title}.txt').write_text(diplomatic_text, encoding='utf-8')
+        (base_path / parma / f'{title}.txt').write_text(desired_diplomatic_text, encoding='utf-8')
     
 
 if __name__ == "__main__":
