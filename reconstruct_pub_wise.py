@@ -1,21 +1,28 @@
 import re
 from antx import transfer
 from pathlib import Path
+import urllib.request as r
+from bs4 import BeautifulSoup as bs
+import json
 
+url = r.urlopen("https://raw.githubusercontent.com/OpenPecha-dev/editable-text/main/t_text_list.json")
+content = url.read()
+soup = bs(content)
+t_text_list_dictionary =json.loads(str(soup))
 
 def get_pub_wise_note(note):
     note = re.sub('\(\d+\)', '', note)
     pub_mapping = {
-        '«པེ་»': 'peking',
-        '«སྣར་»': 'narthang',
-        '«སྡེ་»': 'derge',
-        '«ཅོ་»': 'chone'
+        '«པེ་»': 'པེ་ཅིན',
+        '«སྣར་»': 'སྣར་ཐང',
+        '«སྡེ་»': 'སྡེ་དགེ',
+        '«ཅོ་»': 'ཅོ་ནེ'
     }
     reformat_notes = {
-        'peking': '',
-        'narthang': '',
-        'derge': '',
-        'chone': ''
+        'པེ་ཅིན': '',
+        'སྣར་ཐང': '',
+        'སྡེ་དགེ': '',
+        'ཅོ་ནེ': ''
     }
     note_parts = re.split('(«.+?»)', note)
     pubs = note_parts[1::2]
@@ -126,18 +133,22 @@ def get_diplomatic_text(parma, text_parts):
         diplomatic_text += text_chunks[-1]
     return diplomatic_text
 
-
-
+def get_text_title(text_id):
+    text_title = t_text_list_dictionary[text_id]['title']
+    return text_title
+    
+    
 def reconstruct_pub_wise(text_id):
-    base_path = Path('./data/tengyur/')
+    base_path = Path('./data/')
     collated_text = (base_path / 'collated_text' / f'{text_id}.txt').read_text(encoding='utf-8')
     text_parts = split_text(collated_text)
-    parmas = ['derge', 'narthang', 'peking', 'chone']
+    parmas = ['སྡེ་དགེ', 'སྣར་ཐང', 'པེ་ཅིན', 'ཅོ་ནེ']
     for parma in parmas:
         diplomatic_text = get_diplomatic_text(parma, text_parts)
-        (base_path / parma / f'{text_id}.txt').write_text(diplomatic_text, encoding='utf-8')
+        title = get_text_title(text_id)
+        (base_path / parma / f'{title}.txt').write_text(diplomatic_text, encoding='utf-8')
     
 
 if __name__ == "__main__":
-    text_id = 'D1109'
+    text_id = 'D3871'
     reconstruct_pub_wise(text_id)

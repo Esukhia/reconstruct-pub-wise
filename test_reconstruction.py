@@ -9,7 +9,7 @@ def get_collated_text_parts():
     return text_parts
 
 def test_derge_dip():
-    parma  = "derge"
+    parma  = "སྡེ་དགེ"
     expected_text = Path(f'./tests/data/{parma}/D007.txt').read_text(encoding='utf-8')
     text_parts = get_collated_text_parts()
     diplomatic_text = get_diplomatic_text(parma, text_parts)
@@ -17,7 +17,7 @@ def test_derge_dip():
 
 
 def test_narthang_dip():
-    parma  = "narthang"
+    parma  = "སྣར་ཐང"
     expected_text = Path(f'./tests/data/{parma}/D007.txt').read_text(encoding='utf-8')
     text_parts = get_collated_text_parts()
     diplomatic_text = get_diplomatic_text(parma, text_parts)
@@ -25,14 +25,14 @@ def test_narthang_dip():
 
 
 def test_peking_dip():
-    parma  = "peking"
+    parma  = "པེ་ཅིན"
     expected_text = Path(f'./tests/data/{parma}/D007.txt').read_text(encoding='utf-8')
     text_parts = get_collated_text_parts()
     diplomatic_text = get_diplomatic_text(parma, text_parts)
     assert diplomatic_text == expected_text
 
 def test_chone_dip():
-    parma  = "chone"
+    parma  = "ཅོ་ནེ"
     expected_text = Path(f'./tests/data/{parma}/D007.txt').read_text(encoding='utf-8')
     text_parts = get_collated_text_parts()
     diplomatic_text = get_diplomatic_text(parma, text_parts)
