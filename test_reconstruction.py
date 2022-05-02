@@ -40,4 +40,4 @@ def test_chone_dip():
 
 
 if __name__ == "__main__":
-    test_narthang_dip()
+    test_peking_dip()

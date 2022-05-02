@@ -96,13 +96,46 @@ def get_new_note(old_note, note, next_chunk):
     new_note = note
     first_char = next_chunk[0]
     if not is_punct(first_char):
-        new_note = re.sub('།', '་', new_note)
-        new_note = re.sub('་་', '་', new_note)
+        if new_note[-1] == "།":
+            new_note = new_note[:-1]+"་"
+        # new_note = re.sub('་་', '་', new_note)
     elif is_punct(first_char):
         new_note = re.sub('།', '', new_note)
     patterns = [["line_break", '(\n)']]
     new_note = transfer(old_note, patterns, new_note)
     return new_note
+
+def get_first_syl(text):
+    chunks = re.split('(་|།།|།)',text)
+    reformated_chunks = []
+    cur_chunk = ""
+    for chunk in chunks:
+        if chunk and not is_punct(chunk):
+            cur_chunk += chunk
+        elif is_punct(chunk) and chunk != "།།":
+            cur_chunk += chunk
+            reformated_chunks.append(cur_chunk)
+            cur_chunk = ""
+        elif chunk == "།།":
+            reformated_chunks.append(cur_chunk)
+            reformated_chunks.append(chunk)
+            cur_chunk = ''
+    if cur_chunk:
+        reformated_chunks.append(cur_chunk)
+    last_syl = reformated_chunks[0]
+    return last_syl
+
+
+def get_the_proper_note(old_note, cur_parma_note):
+    old_note = re.sub(r"\n", "", old_note)
+    notes = re.split(r"…….",cur_parma_note)
+    start_text = get_last_syl(notes[0])
+    end_text = get_first_syl(notes[1])
+    start_index = (re.search(fr"{start_text}", old_note)).regs[0][1]
+    end_index = (re.search(fr"{end_text}", old_note)).regs[0][0]
+    proper_note = notes[0]+old_note[start_index:end_index]+notes[1]
+    return proper_note
+
 
 def get_diplomatic_text(parma, text_parts):
     diplomatic_text = ''
@@ -118,6 +151,8 @@ def get_diplomatic_text(parma, text_parts):
         new_chunk = ""
         old_note = get_old_note(text_chunk)
         if cur_parma_note:
+            if "……." in cur_parma_note:
+                cur_parma_note = get_the_proper_note(old_note, cur_parma_note)
             if "-" in cur_parma_note:
                 new_chunk = re.sub(old_note+"$", '', text_chunk)
             elif "+" in cur_parma_note:
