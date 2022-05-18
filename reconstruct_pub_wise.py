@@ -102,7 +102,8 @@ def get_diplomatic_durchen(durchen, parma):
 def get_text_title(opf_path):
     meta_yml = load_yaml(Path(f"{opf_path}/meta.yml"))
     text_id = meta_yml['source_metadata']['text_id']
-    return text_id
+    title = t_text_list_dictionary[text_id]['title']
+    return title
 
 
 def get_desired_text_format(diplomatic_text):
@@ -128,9 +129,9 @@ def reconstruct_pub_wise(opf_path):
         for parma in parmas:
             diplomatic_durchen = get_diplomatic_durchen(durchen_layer, parma)
             diplomatic_text = get_diplomatic_text(base_text, diplomatic_durchen, load_yaml(durchen_path))
-            # desired_diplomatic_text = get_desired_text_format(diplomatic_text)
+            desired_diplomatic_text = get_desired_text_format(diplomatic_text)
             title = get_text_title(opf_path)
-            Path(f'./{parma_dic[parma]}/{title}.txt').write_text(diplomatic_text, encoding='utf-8')
+            Path(f'./data/{parma_dic[parma]}/{title}.txt').write_text(desired_diplomatic_text, encoding='utf-8')
     
 
 if __name__ == "__main__":

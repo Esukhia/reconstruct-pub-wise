@@ -17,8 +17,9 @@ def test_derge_dip():
     base_text = base_path.read_text(encoding='utf-8')
     diplomatic_durchen = get_diplomatic_durchen(durchen_layer, parma)
     diplomatic_text = get_diplomatic_text(base_text, diplomatic_durchen, load_yaml(durchen_path))
+    desired_diplomatic_text = get_desired_text_format(diplomatic_text)
     expected_text = Path(f'./tests/data/{parma_dic[parma]}/D007.txt').read_text(encoding='utf-8')
-    assert diplomatic_text == expected_text
+    assert desired_diplomatic_text == expected_text
 
 
 
@@ -29,8 +30,9 @@ def test_peking_dip():
     base_text = base_path.read_text(encoding='utf-8')
     diplomatic_durchen = get_diplomatic_durchen(durchen_layer, parma)
     diplomatic_text = get_diplomatic_text(base_text, diplomatic_durchen, load_yaml(durchen_path))
+    desired_diplomatic_text = get_desired_text_format(diplomatic_text)
     expected_text = Path(f'./tests/data/{parma_dic[parma]}/D007.txt').read_text(encoding='utf-8')
-    assert diplomatic_text == expected_text
+    assert desired_diplomatic_text == expected_text
 
 
 
@@ -41,8 +43,9 @@ def test_narthang_dip():
     base_text = base_path.read_text(encoding='utf-8')
     diplomatic_durchen = get_diplomatic_durchen(durchen_layer, parma)
     diplomatic_text = get_diplomatic_text(base_text, diplomatic_durchen, load_yaml(durchen_path))
+    desired_diplomatic_text = get_desired_text_format(diplomatic_text)
     expected_text = Path(f'./tests/data/{parma_dic[parma]}/D007.txt').read_text(encoding='utf-8')
-    assert diplomatic_text == expected_text
+    assert desired_diplomatic_text == expected_text
 
 def test_chone_dip():
     parma  = "chone"
@@ -51,7 +54,8 @@ def test_chone_dip():
     base_text = base_path.read_text(encoding='utf-8')
     diplomatic_durchen = get_diplomatic_durchen(durchen_layer, parma)
     diplomatic_text = get_diplomatic_text(base_text, diplomatic_durchen, load_yaml(durchen_path))
+    desired_diplomatic_text = get_desired_text_format(diplomatic_text)
     expected_text = Path(f'./tests/data/{parma_dic[parma]}/D007.txt').read_text(encoding='utf-8')
-    assert diplomatic_text == expected_text
+    assert desired_diplomatic_text == expected_text
 
 
