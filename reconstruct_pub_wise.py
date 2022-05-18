@@ -4,191 +4,136 @@ from pathlib import Path
 import urllib.request as r
 from bs4 import BeautifulSoup as bs
 import json
+from urllib.request import urlopen
+from openpecha.core.pecha import OpenPechaFS
+from openpecha.utils import load_yaml
 
-url = r.urlopen("https://raw.githubusercontent.com/OpenPecha-dev/editable-text/main/t_text_list.json")
-content = url.read()
-soup = bs(content)
-t_text_list_dictionary =json.loads(str(soup))
+url = "https://raw.githubusercontent.com/OpenPecha-dev/editable-text/main/t_text_list.json"
+response = urlopen(url)
+t_text_list_dictionary = json.loads(response.read())
 
-def get_pub_wise_note(note):
-    note = re.sub('\(\d+\)', '', note)
-    pub_mapping = {
-        '«པེ་»': 'པེ་ཅིན',
-        '«སྣར་»': 'སྣར་ཐང',
-        '«སྡེ་»': 'སྡེ་དགེ',
-        '«ཅོ་»': 'ཅོ་ནེ'
-    }
-    reformat_notes = {
-        'པེ་ཅིན': '',
-        'སྣར་ཐང': '',
-        'སྡེ་དགེ': '',
-        'ཅོ་ནེ': ''
-    }
-    note_parts = re.split('(«.+?»)', note)
-    pubs = note_parts[1::2]
-    notes = note_parts[2::2]
-    for walker, (pub, note_part) in enumerate(zip(pubs, notes)):
-        if note_part:
-            reformat_notes[pub_mapping[pub]] = note_part.replace('>', '')
-        else:
-            if notes[walker+1]:
-                reformat_notes[pub_mapping[pub]] = notes[walker+1].replace('>', '')
-            else:
-                reformat_notes[pub_mapping[pub]] = notes[walker+2].replace('>', '')
-    return reformat_notes
 
-def split_text(content):
-    text_parts = {
-        'text_chunks': None,
-        'notes': None
-    }
-    chunks = re.split(r"(\(\d+\) <.+?>)", content)
-    text_chunks = []
-    notes = []
-    for chunk in chunks:
-        if chunk and re.search(r"\(\d+\) <.+?>", chunk):
-            notes.append(chunk)
-        else:
-            text_chunks.append(chunk)
-    text_parts['text_chunks'] = text_chunks
-    text_parts['notes'] = notes
-    return text_parts
+parma_dic = {
+    'derge': 'སྡེ་དགེ',
+    'narthang': 'སྣར་ཐང',
+    'peking': 'པེ་ཅིན',
+    'chone': 'ཅོ་ནེ'
+}
 
-def get_last_syl(text):
-    chunks = re.split('(་|།།|།)',text)
-    reformated_chunks = []
-    cur_chunk = ""
-    for chunk in chunks:
-        if chunk and not is_punct(chunk):
-            cur_chunk += chunk
-        elif is_punct(chunk) and chunk != "།།":
-            cur_chunk += chunk
-            reformated_chunks.append(cur_chunk)
-            cur_chunk = ""
-        elif chunk == "།།":
-            reformated_chunks.append(cur_chunk)
-            reformated_chunks.append(chunk)
-            cur_chunk = ''
-    if cur_chunk:
-        reformated_chunks.append(cur_chunk)
-    last_syl = reformated_chunks[-1]
-    return last_syl
 
-def get_old_note(chunk):
-    if re.search(':(.|\n)+$', chunk):
-        old_note = re.search(':(.|\n)+$', chunk)[0]
-        return old_note
+def get_next_start(num, anns):
+    if num == len(anns):
+        next_start = None
     else:
-        old_note = get_last_syl(chunk)
-    old_note = re.sub('\[.+\]', "", old_note)
-    return old_note
-
-def is_punct(string):
-    # put in common
-    if '༄' in string or '༅' in string or '༆' in string or '༇' in string or '༈' in string or \
-        '།' in string or '༎' in string or '༏' in string or '༐' in string or '༑' in string or \
-        '༔' in string or '_' in string or '་' == string:
-        return True
-    else:
-        return False
-
-def get_new_note(old_note, note, next_chunk):
-    new_note = note
-    first_char = next_chunk[0]
-    if not is_punct(first_char):
-        if new_note[-1] == "།":
-            new_note = new_note[:-1]+"་"
-        # new_note = re.sub('་་', '་', new_note)
-    elif is_punct(first_char):
-        new_note = re.sub('།', '', new_note)
-    patterns = [["line_break", '(\n)']]
-    new_note = transfer(old_note, patterns, new_note)
-    return new_note
-
-def get_first_syl(text):
-    chunks = re.split('(་|།།|།)',text)
-    reformated_chunks = []
-    cur_chunk = ""
-    for chunk in chunks:
-        if chunk and not is_punct(chunk):
-            cur_chunk += chunk
-        elif is_punct(chunk) and chunk != "།།":
-            cur_chunk += chunk
-            reformated_chunks.append(cur_chunk)
-            cur_chunk = ""
-        elif chunk == "།།":
-            reformated_chunks.append(cur_chunk)
-            reformated_chunks.append(chunk)
-            cur_chunk = ''
-    if cur_chunk:
-        reformated_chunks.append(cur_chunk)
-    last_syl = reformated_chunks[0]
-    return last_syl
+        for ann_num,(_, ann_info) in enumerate(anns.items(), 1):
+            if ann_num == num+1:
+                next_start = ann_info['span']['start']
+    return next_start
 
 
-def get_the_proper_note(old_note, cur_parma_note):
-    old_note = re.sub(r"\n", "", old_note)
-    notes = re.split(r"…….",cur_parma_note)
-    start_text = get_last_syl(notes[0])
-    end_text = get_first_syl(notes[1])
-    start_index = (re.search(fr"{start_text}", old_note)).regs[0][1]
-    end_index = (re.search(fr"{end_text}", old_note)).regs[0][0]
-    proper_note = notes[0]+old_note[start_index:end_index]+notes[1]
-    return proper_note
 
-
-def get_diplomatic_text(parma, text_parts):
-    diplomatic_text = ''
-    text_chunks = text_parts['text_chunks']
-    notes = text_parts['notes']
-    for chunk_walker, (text_chunk, note) in enumerate(zip(text_chunks, notes)):
-        try:
-            next_text_chunk = text_chunks[chunk_walker+1]
-        except:
-            next_text_chunk = ''
-        all_pub_note = get_pub_wise_note(note)
-        cur_parma_note = all_pub_note[parma]
-        new_chunk = ""
-        old_note = get_old_note(text_chunk)
-        if cur_parma_note:
-            if "……." in cur_parma_note:
-                cur_parma_note = get_the_proper_note(old_note, cur_parma_note)
-            if "-" in cur_parma_note:
-                new_chunk = re.sub(old_note+"$", '', text_chunk)
-            elif "+" in cur_parma_note:
-                new_note = get_new_note(old_note, cur_parma_note[1:], next_text_chunk)
-                new_chunk = text_chunk + new_note
+def get_diplomatic_text(base_text, new_durchen, old_durchen):
+    anns = new_durchen['annotations']
+    new_base_text = ""
+    for ann_num,(ann_id, ann_info) in enumerate(anns.items(), 1):
+        default_pub = ann_info['default']
+        if default_pub != old_durchen['annotations'][ann_id]['default']:
+            start = ann_info["span"]['start']
+            end = old_durchen['annotations'][ann_id]['span']['end']
+            note = ann_info['options'][default_pub]['note']
+            next_start = get_next_start(ann_num, old_durchen['annotations'])
+            if ann_num == 1:
+                new_base_text += base_text[0:start] + note + base_text[end:next_start]
+            elif ann_num == len(anns):
+                new_base_text += note + base_text[end:]
             else:
-                new_note = get_new_note(old_note, cur_parma_note, next_text_chunk)
-                new_chunk = re.sub(old_note+"$", new_note, text_chunk)
+                new_base_text += note + base_text[end:next_start]
         else:
-            new_chunk = re.sub(':', '', text_chunk)
-        diplomatic_text += new_chunk
-    if len(text_chunks) > len(notes):
-        diplomatic_text += text_chunks[-1]
-    return diplomatic_text
+            start = ann_info["span"]['start']
+            end = ann_info["span"]['end']
+            note = ann_info['options'][default_pub]['note']
+            next_start = get_next_start(ann_num, old_durchen['annotations'])
+            if ann_num == 1:
+                new_base_text += base_text[0:start] + note + base_text[end:next_start]
+            elif ann_num == len(anns):
+                new_base_text += note + base_text[end:]
+            else:
+                new_base_text += note + base_text[end:next_start]                
+    return new_base_text
 
-def get_text_title(text_id):
-    text_title = t_text_list_dictionary[text_id]['title']
-    return text_title
+
+def update_durchen_offset(offset, anns, _id):
+    start_ann = int(anns[_id]['span']['start'])
+    for ann_id, ann_info in anns.items():
+        start = int(ann_info['span']['start'])
+        end = int(ann_info['span']['end'])
+        if start_ann <= start:
+            if _id == ann_id:
+                ann_info['span']['end'] = int(end + offset)
+            else:
+                ann_info['span']['start'] = int(start + offset)
+                ann_info['span']['end'] = int(end + offset)
+    return anns
+
+
+def check_offset(ann_info, param):
+    default_pub = ann_info['default']
+    default_word = ann_info['options'][default_pub]['note']
+    modern_word = ann_info['options'][param]['note']
+    offset = int(len(modern_word)- len(default_word))
+    return offset
+
+
+def get_diplomatic_durchen(durchen, parma):
+    anns = durchen['annotations']
+    for ann_id, ann_info in anns.items():
+        if parma == ann_info['default']:
+            continue
+        else:
+            offset = check_offset(ann_info, parma)
+            ann_info['default'] = parma
+            if offset != 0:
+                anns = update_durchen_offset(offset, anns, ann_id) 
+    
+    durchen['annotations'].update(anns)
+    return durchen
+    
+
+def get_text_title(opf_path):
+    meta_yml = load_yaml(Path(f"{opf_path}/meta.yml"))
+    text_id = meta_yml['source_metadata']['text_id']
+    return text_id
+
 
 def get_desired_text_format(diplomatic_text):
     page_number_removed_text = re.sub(r"([0-9]+-[0-9]+)", " ", diplomatic_text)
     desired_text = re.sub(r"\n", " ", page_number_removed_text)
     return desired_text
-    
-def reconstruct_pub_wise(text_id):
-    base_path = Path('./data/')
-    collated_text = (base_path / 'collated_text' / f'{text_id}.txt').read_text(encoding='utf-8')
-    text_parts = split_text(collated_text)
-    parmas = ['སྡེ་དགེ', 'སྣར་ཐང', 'པེ་ཅིན', 'ཅོ་ནེ']
-    for parma in parmas:
-        diplomatic_text = get_diplomatic_text(parma, text_parts)
-        desired_diplomatic_text = get_desired_text_format(diplomatic_text)
-        title = get_text_title(text_id)
-        (base_path / parma / f'{title}.txt').write_text(desired_diplomatic_text, encoding='utf-8')
+
+
+def get_base_names(opf_path):
+    base_names = []
+    for base_path in list((opf_path / "base").iterdir()):
+        base_names.append(base_path.stem)
+    return base_names
+
+
+def reconstruct_pub_wise(opf_path):
+    base_text = Path(f"{opf_path}/base/00001.txt").read_text(encoding='utf-8')
+    layers = list(Path(f"{opf_path}/layers").iterdir())
+    for layer in layers:
+        durchen_path = Path(f"{layer}/Durchen.yml")
+        durchen_layer = load_yaml(durchen_path)
+        parmas = ['narthang','derge', 'peking', 'chone']
+        for parma in parmas:
+            diplomatic_durchen = get_diplomatic_durchen(durchen_layer, parma)
+            diplomatic_text = get_diplomatic_text(base_text, diplomatic_durchen, load_yaml(durchen_path))
+            # desired_diplomatic_text = get_desired_text_format(diplomatic_text)
+            title = get_text_title(opf_path)
+            Path(f'./{parma_dic[parma]}/{title}.txt').write_text(diplomatic_text, encoding='utf-8')
     
 
 if __name__ == "__main__":
-    text_id = 'D3871'
-    reconstruct_pub_wise(text_id)
+    pecha_id = 'PB7EAF27B'
+    opf_path = Path(f"./data/opf/{pecha_id}/{pecha_id}.opf")
+    reconstruct_pub_wise(opf_path)
